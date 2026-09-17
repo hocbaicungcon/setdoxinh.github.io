@@ -1,6 +1,6 @@
 ---
 title: "5 set đồ công sở dưới 500K: Đẹp thật hay chỉ là ảnh quảng cáo?"
-category: "Review thời trang"
+category: "Review Thật"
 date: "06.09.2025"
 thumbnail: "https://images.unsplash.com/photo-1483985988355-763728e1935b?w=1000&q=85"
 tags: ["Công sở", "Ngân sách nhỏ"]

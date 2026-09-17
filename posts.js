@@ -1,6 +1,61 @@
-const font=document.createElement('link');font.rel='stylesheet';font.href='https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap';document.head.appendChild(font);document.documentElement.style.setProperty('--sans',"'Be Vietnam Pro',sans-serif");document.querySelectorAll('nav a').forEach((a,i)=>{const labels=['Mặc Đẹp','Review Thật','Cẩm Nang Phối Đồ','Gợi Ý Mua Sắm'];if(labels[i])a.textContent=labels[i]});const css=document.createElement('link');css.rel='stylesheet';css.href='posts.css';document.head.appendChild(css);const list = document.querySelector('#post-list'), tagsEl = document.querySelector('#tags'); let posts=[];
-const sale=document.createElement('script');sale.src='sale.js';document.body.appendChild(sale);fetch('posts.json').then(r=>r.json()).then(data=>{posts=data; const tags=['Tất cả',...new Set(posts.flatMap(p=>p.tags||[]))]; tagsEl.innerHTML=tags.map((t,i)=>`<button class="tag-button ${i?'':'selected'}" data-tag="${t}">${t}</button>`).join(''); tagsEl.addEventListener('click',e=>{if(e.target.matches('button')){document.querySelectorAll('.tag-button').forEach(b=>b.classList.remove('selected'));e.target.classList.add('selected');render(e.target.dataset.tag)}});const selected=new URLSearchParams(location.search).get('tag')||'Tất cả';const button=[...document.querySelectorAll('.tag-button')].find(b=>b.dataset.tag===selected);if(button){document.querySelectorAll('.tag-button').forEach(b=>b.classList.remove('selected'));button.classList.add('selected')}render(selected)}).catch(()=>list.innerHTML='<p>Chưa có bài viết nào.</p>');
-list.addEventListener('click',e=>{const tag=e.target.closest('.post-tags span');if(tag){e.preventDefault();e.stopPropagation();location.href=`posts.html?tag=${encodeURIComponent(tag.textContent.slice(1))}`}else if(e.target.matches('.post-card img')){location.href=`post.html?slug=${e.target.closest('.post-card').querySelector('.read-more').href.split('slug=')[1]}`}});const layoutStyle=document.createElement('style');layoutStyle.textContent='.post-card{display:grid;grid-template-columns:190px 1fr;min-height:225px}.post-card>div{padding:23px}@media(max-width:700px){.post-card{grid-template-columns:125px 1fr}.post-card>div{padding:15px}}';document.head.appendChild(layoutStyle);
-function render(tag){const items=tag==='Tất cả'?posts:posts.filter(p=>(p.tags||[]).includes(tag));list.innerHTML=items.map(p=>`<article class="post-card"><img src="${p.thumbnail}" alt="${p.title}"><div><p class="meta">${p.category||'MẶC ĐẸP'} · ${p.date||''}</p><h2>${p.title}</h2><p>${p.excerpt||''}</p><a class="read-more" href="post.html?slug=${p.slug}">Đọc bài →</a><div class="post-tags">${(p.tags||[]).map(t=>`<span>#${t}</span>`).join('')}</div></div></article>`).join('')||'<p>Không có bài trong chủ đề này.</p>'}
-const ui=document.createElement('link');ui.rel='stylesheet';ui.href='ui.css';document.head.appendChild(ui);
-const wantedCategory=new URLSearchParams(location.search).get('category');const categoryTimer=setInterval(()=>{if(wantedCategory&&posts.length){clearInterval(categoryTimer);const original=posts;posts=original.filter(p=>(p.category||'').toLowerCase()===wantedCategory.toLowerCase());render('Tất cả');posts=original}},20);
+const list = document.querySelector('#post-list');
+const tagsEl = document.querySelector('#tags');
+const params = new URLSearchParams(location.search);
+const normalizeCategory = value => (value || '').trim().toLocaleLowerCase('vi').normalize('NFC');
+const categories = ['Review Thật', 'Cẩm Nang Phối Đồ', 'Gợi Ý Mua Sắm'];
+const requested = params.get('category') || '';
+const category = normalizeCategory(requested) === 'review thời trang' ? 'Review Thật' :
+  categories.find(name => normalizeCategory(name) === normalizeCategory(requested)) || requested;
+let selectedTag = params.get('tag') || '';
+let posts = [];
+const escapeHTML = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function filterURL(tag) {
+  const query = new URLSearchParams();
+  if (category) query.set('category', category);
+  if (tag) query.set('tag', tag);
+  return 'posts.html' + (query.size ? '?' + query : '');
+}
+for (const href of ['posts.css', 'ui.css', 'https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap']) {
+  const link = document.createElement('link'); link.rel = 'stylesheet'; link.href = href; document.head.appendChild(link);
+}
+document.documentElement.style.setProperty('--sans', "'Be Vietnam Pro',sans-serif");
+const saleScript = document.createElement('script'); saleScript.src = 'sale.js'; document.body.appendChild(saleScript);
+const nav = document.querySelector('#main-nav');
+const toggle = document.querySelector('.menu-toggle');
+toggle.setAttribute('aria-expanded', 'false');
+toggle.addEventListener('click', () => {
+  const open = nav.classList.toggle('open');
+  toggle.setAttribute('aria-expanded', String(open));
+});
+nav.querySelectorAll('a').forEach(link => {
+  const active = (new URL(link.href).searchParams.get('category') || '') === category;
+  link.classList.toggle('active', active);
+  if (active) link.setAttribute('aria-current', 'page');
+});
+const heading = category || 'Mặc Đẹp';
+document.querySelector('h1').textContent = heading;
+document.title = heading + ' — Set Đồ Xinh';
+const descriptions = {
+  'Review Thật': 'Các bài viết đánh giá và tiêu chí lựa chọn trang phục.',
+  'Cẩm Nang Phối Đồ': 'Hướng dẫn phối đồ, chọn màu và xây dựng tủ đồ dễ ứng dụng.',
+  'Gợi Ý Mua Sắm': 'Gợi ý lựa chọn quần áo, túi xách và phụ kiện theo nhu cầu.'
+};
+if (descriptions[category]) document.querySelector('.page-intro').textContent = descriptions[category];
+function render() {
+  const scoped = posts.filter(p => !category || normalizeCategory(p.category) === normalizeCategory(category));
+  const tags = [...new Set(scoped.flatMap(p => p.tags || []))];
+  if (selectedTag && !tags.includes(selectedTag)) tags.push(selectedTag);
+  tagsEl.innerHTML = ['', ...tags].map(tag => `<a class="tag-button ${tag === selectedTag ? 'selected' : ''}" href="${escapeHTML(filterURL(tag))}" ${tag === selectedTag ? 'aria-current="true"' : ''}>${escapeHTML(tag || 'Tất cả')}</a>`).join('');
+  const items = scoped.filter(p => !selectedTag || (p.tags || []).includes(selectedTag));
+  list.innerHTML = items.map(p => {
+    const href = 'post.html?slug=' + encodeURIComponent(p.slug);
+    return `<article class="post-card"><a class="post-thumbnail" href="${href}" aria-label="${escapeHTML(p.title)}"><img src="${escapeHTML(p.thumbnail)}" alt="${escapeHTML(p.title)}" loading="lazy"></a><div><p class="meta">${escapeHTML(p.category)} · ${escapeHTML(p.date)}</p><h2><a href="${href}">${escapeHTML(p.title)}</a></h2><p>${escapeHTML(p.excerpt || '')}</p><a class="read-more" href="${href}">Đọc bài →</a><div class="post-tags">${(p.tags || []).map(tag => `<a href="${escapeHTML(filterURL(tag))}">#${escapeHTML(tag)}</a>`).join('')}</div></div></article>`;
+  }).join('') || '<p>Chưa có bài viết phù hợp trong danh mục này. Bạn có thể chọn tag khác hoặc quay lại Mặc Đẹp.</p>';
+}
+fetch('posts.json').then(response => {
+  if (!response.ok) throw new Error('Không tải được bài viết');
+  return response.json();
+}).then(data => {
+  posts = data.map(p => ({...p, category: normalizeCategory(p.category) === 'review thời trang' ? 'Review Thật' : p.category}));
+  render();
+}).catch(() => { list.textContent = 'Không tải được danh sách bài viết. Vui lòng tải lại trang.'; });
