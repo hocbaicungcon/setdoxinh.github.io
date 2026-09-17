@@ -1,6 +1,6 @@
 ---
 title: "7 công thức phối đồ đi làm không nhàm chán"
-category: "Cẩm Nang Phối Đồ"
+category: "Mặc Đẹp"
 date: "10.09.2025"
 thumbnail: "https://images.unsplash.com/photo-1485230895905-ec40ba36b9bc?w=1000&q=85"
 tags: ["Công sở", "Phối đồ"]
