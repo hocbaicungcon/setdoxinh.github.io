@@ -1,0 +1,3 @@
+import {readdir,readFile,writeFile} from 'node:fs/promises';
+const files=(await readdir('post')).filter(f=>f.endsWith('.md')); const posts=[];
+for(const file of files){const raw=await readFile('post/'+file,'utf8'), [,fm,content]=raw.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/)||[]; if(!fm)continue; const p={}; for(const line of fm.split('\n')){const m=line.match(/^(\w+):\s*(.*)$/);if(m){let v=m[2].trim().replace(/^['"]|['"]$/g,'');p[m[1]]=v.startsWith('[')?v.slice(1,-1).split(',').map(x=>x.trim().replace(/^['"]|['"]$/g,'')):v}} p.slug=file.replace(/\.md$/,'');p.content=content.trim();posts.push(p)} await writeFile('posts.json',JSON.stringify(posts,null,2)+'\n');
